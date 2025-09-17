@@ -57,48 +57,20 @@ public class SecondSolution {
         int third_k = 1;
         int third_result = 2129;
 
-        assertThat(solution(first_classes, first_k)).isEqualTo(first_result);
+        int[] fourth_classes = {1, 3, 5, 10};
+        int fourth_k = 2;
+        int fourth_result = 10;
+
+        assertThat(solution(fourth_classes, fourth_k)).isEqualTo(fourth_result);
     }
 
-    /**
-     * 이 문제를 어떻게 풀었는지 설명하세요.
-     *
-     * 각 경우의 수에서 나올 수 있는 최대값의 범위는 배열의 최대값과 총합 사이 입니다.
-     * 그래서 이 범위 안에서 중간값을 정했고,
-     * 만약 N개의 서버에 모든 반을 담았으면 더 작은 중간값으로도 가능한지 확인하기위해 범위를 줄였고,
-     * 못담았다면 중간값을 늘려서 범위를 키우는 방식으로 풀었습니다.
-     *
-     * @param classes
-     * @param k
-     * @return
-     */
     private long solution(int[] classes, int k) {
 
-        // 왜냐하면, N개의 서버에 속한 학생 수의 최댓값이 배열의 최댓값 이상이기 떄문에 중간 값을 구할 최소 기준으로 했다.
-        // ex) classes의 max value == 48 이라면, 각 서버의 최댓값은 48이상이다.
         long minCapacity = Arrays.stream(classes).asLongStream().max().orElse(0);
-
-        // 서버에서 수용할 수 있는 최대 학생 수 (즉, 서버 1개에서 수용되는 모든 학생 수의 총합이다.)
-        // 어떤 경우의 수라도 배열의 총합을 넘어갈 수 없기 때문에 중간 값을 구할 최대 기준으로 했다.
-        // ex) classes의 sum == 282 라면, 1개의 서버에 모든 반을 몰아넣었을 때 최대 282명까지만 수용할 수 있다.
         long maxCapacity = Arrays.stream(classes).asLongStream().sum();
-
-        /**
-         * 서버당 수용할 수 있는 최소 학생 수 + 서버에서 수용할 수 있는 최대 학생 수 의 중간 값을 찾고,
-         * classes의 연속된 학생 수를 조합해서 k개의 서버로 분배했을 떄 이 중간 값을 초과한다면,
-         * 이 중간 값을 기준으로 최대 학생 수와의 중간 값을 다시 찾아서 재시도한다.
-         * -> 서버에서 수용된 학생 수의 최댓값을 모르기 때문에
-         * 최종적으로 중간 값을 초과하지않고 서버에서 수용된 학생 수가 가장 큰 값을 반환한다.
-         *
-         * 예를 들면, 3개의 가방이 존재하고, 각 가방에는 책을 순서대로 차곡차곡 넣어야한다.
-         * 3개의 가방에 책을 나눠 담을 때 각 가방에는 최소 48개 책을 넣을 수 있어야하고, 최대 282개의 책을 초과해서 담을 수 없다.
-         * 그렇다면, 가장 많이 담은 책의 수가 각 경우의 수에서 가장 적게 담은 책의 수가 될 수있는가?
-         *
-         */
 
         while(minCapacity < maxCapacity) {
 
-            // max와 total 사이에 중간 값을 찾아서 한 서버에서 담을 수 있는 반의 수를 줄여가야함
             long middleCapacity = (minCapacity + maxCapacity) / 2;
 
             System.out.println("middleCapacity = " + middleCapacity);

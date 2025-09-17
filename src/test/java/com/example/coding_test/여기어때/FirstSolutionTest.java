@@ -39,7 +39,11 @@ import org.junit.jupiter.api.Test;
  * - 잘못된 날짜(01/32, 13/05)나 중복된 날짜는 holidays의 원소로 주어지지 않습니다.
  * - holidays의 원소는 모두 양력을 사용하는 공휴일입니다. 따라서 년도가 바뀌어도 공휴일의 날짜는 변하지 않습니다.
  */
-public class FirstSolution {
+public class FirstSolutionTest {
+
+    private static final DateTimeFormatter YMD = DateTimeFormatter.ofPattern("yyyy/MM/dd");
+    private static final DateTimeFormatter MD  = DateTimeFormatter.ofPattern("MM/dd");
+
 
     @Test
     void test() {
@@ -59,30 +63,66 @@ public class FirstSolution {
         String[] third_holidays = {"12/23"};
         int third_result = 1;
 
-        assertThat(solution(first_join_date, first_resign_date, first_holidays)).isEqualTo(first_result);
+        String fourth_join_date = "2025/12/01 MON";
+        String fourth_resign_date = "2026/01/12";
+        String[] fourth_holidays = {"12/25"};
+        int fourth_result = 30;
+
+
+
+        assertThat(solution(fourth_join_date, fourth_resign_date, fourth_holidays)).isEqualTo(fourth_result);
     }
 
     private int solution(String join_date, String resign_date, String[] holidays) {
 
-        LocalDate joinDate = LocalDate.parse(join_date.substring(0, 10), DateTimeFormatter.ofPattern("yyyy/MM/dd"));
-        LocalDate resignDate = LocalDate.parse(resign_date.substring(0, 10), DateTimeFormatter.ofPattern("yyyy/MM/dd"));
+        LocalDate joinDate = LocalDate.parse(join_date.split(" ")[0], YMD);
+        LocalDate resignDate = LocalDate.parse(resign_date.split(" ")[0], YMD);
 
-        HashSet<String> holidaySet = new HashSet<>(Arrays.asList(holidays));
+        // 전체 일수 (오버 플로우 방지 (int -> long)) -> 입사일을 포함해야해서 + 1
+        long diff = ChronoUnit.DAYS.between(joinDate, resignDate) + 1;
 
-        int diff = (int) ChronoUnit.DAYS.between(joinDate, resignDate);
+        /*
+         * 속도 개선
+         * 일 단위로 검증하지않는다.
+         * (전체 일수 - 주말 수) - 공휴일 수
+         */
 
-        int count = 0;
+        // 주말 수 (전체 일수 / 7) * 2 -> 주말은 토,일이기 때문
+        long weekendsCount = diff / 7 * 2;
 
-        for (int i = 0; i <= diff; i++) {
+        // 평일 수
+        long weekCount = diff - weekendsCount;
 
-            if (!isWeekend(joinDate) && !isHoliday(joinDate, holidaySet)) {
-                count++;
+        // 남은 일수 (전체 일수 / 7을 한 나머지)
+        // ex)
+        // 입사일: 12/1일, 퇴사일: 1/12일 인 경우
+        // 전체 일수: 43일, 주말 수: 12개, 남은 일수: 1개
+        long extraCount = diff % 7;
+
+        DayOfWeek extraStartDow = joinDate.plusDays(weekendsCount * 7).getDayOfWeek();
+        for (int i = 0; i < extraCount; i++) {
+            DayOfWeek dow = DayOfWeek.of((extraStartDow.getValue() - 1 % 7) + 1);
+            if (dow == DayOfWeek.SATURDAY || dow == DayOfWeek.SUNDAY) {
+                weekendsCount++;
             }
-
-            joinDate = joinDate.plusDays(1);
         }
 
-        return count;
+        Set<MonthDay> holidaySet =
+            Arrays.stream(holidays).map(holiday -> MonthDay.parse(holiday, MD)).collect(Collectors.toSet());
+
+        int holidayCount = 0;
+        for (MonthDay holiday : holidaySet) {
+            for (int year = joinDate.getYear(); year <= resignDate.getYear(); year++) {
+
+                LocalDate holidayDate = holiday.atYear(year);
+
+                if (holidayDate.isAfter(joinDate) && holidayDate.isBefore(resignDate)) {
+                    holidayCount++;
+                }
+            }
+        }
+
+        return (int) weekCount - holidayCount;
     }
 
     /**
